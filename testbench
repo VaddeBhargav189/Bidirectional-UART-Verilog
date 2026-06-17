@@ -1,0 +1,104 @@
+module testbench;
+
+reg clk;
+reg reset;
+
+// A -> B
+reg [7:0] data_inA;
+reg startA;
+reg rdy_clearB;
+
+// B -> A
+reg [7:0] data_inB;
+reg startB;
+reg rdy_clearA;
+
+wire [7:0] data_outA;
+wire [7:0] data_outB;
+
+wire rdyA;
+wire rdyB;
+
+wire busyA;
+wire busyB;
+
+Top_module dut(
+    .clk(clk),
+    .reset(reset),
+
+    .data_inA(data_inA),
+    .startA(startA),
+    .rdy_clearB(rdy_clearB),
+    .data_outB(data_outB),
+    .rdyB(rdyB),
+    .busyA(busyA),
+
+    .data_inB(data_inB),
+    .startB(startB),
+    .rdy_clearA(rdy_clearA),
+    .data_outA(data_outA),
+    .rdyA(rdyA),
+    .busyB(busyB)
+);
+
+// 500 MHz clock
+initial begin
+    clk = 0;
+    forever #1 clk = ~clk;
+end
+
+initial begin
+
+    reset = 1;
+
+    startA = 0;
+    startB = 0;
+
+    rdy_clearA = 0;
+    rdy_clearB = 0;
+
+    data_inA = 8'h00;
+    data_inB = 8'h00;
+
+    #10;
+    reset = 0;
+
+    // Test 1 : A -> B
+
+    data_inA = 8'h55;
+    @(posedge clk);
+        startA = 1;
+
+     @(posedge clk);
+        startA = 0;
+    wait(rdyB);
+
+    $display("A sent = 55");
+    $display("B received = %h",data_outB);
+
+    // Clear ready
+
+    rdy_clearB = 1;
+    @(posedge clk);
+    rdy_clearB = 0;
+
+    // Test 2 : B -> A
+
+    data_inB = 8'hAA;
+    startB = 1;
+
+    @(posedge clk);
+    startB = 0;
+
+    wait(rdyA);
+
+    $display("B sent = AA");
+    $display("A received = %h",data_outA);
+
+
+    #10000;
+    $finish;
+
+end
+
+endmodule
